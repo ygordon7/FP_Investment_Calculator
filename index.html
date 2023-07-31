@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Faropoint Investment Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <link rel="stylesheet" href="style.css"> <!-- Link to your external CSS file -->
+</head>
+
+<body>
+  <img src="logo.jpg" alt="Logo" id="logo">
+
+  <h1>Faropoint Investment Calculator</h1>
+  <form id="realEstateForm" onsubmit="event.preventDefault(); calculate()">
+    <div class="form-group">
+      <label for="purchasePrice">1. Purchase Price ($):</label>
+      <input type="text" name="purchasePrice" required oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="form-group">
+      <label for="squareFeet">2. Square Feet:</label>
+      <input type="text" name="squareFeet" required oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="form-group">
+      <label for="costToStabilize">3. Cost to Stabilize ($):</label>
+      <input type="text" name="costToStabilize" required oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="form-group">
+      <label for="inPlaceNOI">4. In Place NOI (PSF):</label>
+      <input type="number" name="inPlaceNOI" required>
+    </div>
+
+    <div class="form-group">
+      <label for="marketRent">5. Market Rent (PSF):</label>
+      <input type="number" name="marketRent" required>
+    </div>
+
+    <div class="form-group">
+      <label for="horizon">6. Horizon (in Years):</label>
+      <input type="number" name="horizon" required>
+    </div>
+
+    <div class="form-group">
+      <label for="avgRentGrowthRate">7. Avg Market Rent Growth (%):</label>
+      <input type="number" name="avgRentGrowthRate" required>
+    </div>
+
+    <div class="form-group">
+      <label for="adjustmentToPurchasePrice">8. Adjustment to Purchase Price (Optional):</label>
+      <input type="text" name="adjustmentToPurchasePrice" oninput="formatNumberInput(this)">
+    </div>
+
+    <div class="form-group">
+      <label for="address">9. Address (Optional):</label>
+      <input type="text" name="address">
+    </div>
+
+    <div class="form-group">
+      <label for="market">10. Market (Optional):</label>
+      <input type="text" name="market">
+    </div>
+
+    <div class="form-group">
+      <label for="submarket">11. Submarket (Optional):</label>
+      <input type="text" name="submarket">
+    </div>
+
+    <button type="submit" onclick="calculate()">Calculate</button>
+  </form>
+
+  <div id="output">
+    <h2>Summary</h2>
+    <div class="calculation">
+      <p>Address: <span id="addressValue"></span></p>
+    </div>
+    <div class="calculation">
+      <p>Market: <span id="marketValue"></span></p>
+    </div>
+    <div class="calculation">
+      <p>Submarket: <span id="submarketValue"></span></p>
+    </div>
+    <div class="calculation">
+      <p>Purchase Price: $<span id="purchasePriceValue"></span></p>
+    </div>
+    <div class="calculation">
+      <p>Price PSF: $<span id="pricePSFValue"></span><span class="tooltip">Calculation: Purchase Price ÷ Square
+          Feet</span></p>
+    </div>
+    <div class="calculation">
+      <p>Cost to Stabilize: $<span id="costToStabilizeValue"></span></p>
+    </div>
+    <div class="calculation">
+      <p>Total Cost PSF: $<span id="totalCostPSFValue"></span><span class="tooltip">(Purchase Price + (Cost to Stabilize
+          * Square Feet)) ÷ Square Feet</span></p>
+    </div>
+    <div class="calculation">
+      <p>In-Place NOI: $<span id="inPlaceNOIValue"></span><span class="tooltip">Calculation: In-Place Rent * Square
+          Feet</span></p>
+    </div>
+    <div class="calculation">
+      <p>In-Place Cap Rate: <span id="inPlaceCapRateValue"></span>%<span class="tooltip">(In-Place NOI ÷ Purchase Price)
+          * 100</span></p>
+    </div>
+    <div class="calculation">
+      <p>Market Rent NOI: $<span id="marketRentNOIValue"></span><span class="tooltip">Calculation: Market Rent * Square
+          Feet</span></p>
+    </div>
+    <div class="calculation">
+      <p>Market Cap Rate: <span id="marketCapRateValue"></span>%<span class="tooltip">(Market Rent NOI ÷ Purchase Price)
+          * 100</span></p>
+    </div>
+    <div class="calculation">
+      <p>Yield on Cost (In-Place): <span id="yieldOnCostInPlaceValue"></span>%<span class="tooltip">(In-Place NOI ÷
+          Total Investment) * 100</span></p>
+    </div>
+    <div class="calculation">
+      <p>Market Yield on Cost: <span id="marketYieldOnCostValue"></span>%<span class="tooltip">(Market Rent NOI ÷ Total
+          Investment) * 100</span></p>
+    </div>
+    <div class="calculation">
+      <p>Trended Market Rent (6th Year): $<span id="trendedMarketRentValue"></span> PSF<span class="tooltip">Trended
+          Market Rent (6th Year): $<span id="trendedMarketRentValue"></span> PSF</span></p>
+    </div>
+    <div class="calculation">
+      <p>Trended Market Cap Rate: <span id="trendedMarketCapRateValue"></span>%<span class="tooltip">(Trended Market
+          Rent NOI ÷ Purchase Price) * 100</span></p>
+    </div>
+    <div class="calculation">
+      <p>Trended Market Yield on Cost: <span id="trendedMarketYieldOnCostValue"></span>%<span class="tooltip">(Trended
+          Market Rent NOI ÷ Total Investment) * 100</span></p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('keydown', function (event) {
+      if (event.keyCode === 13 || event.key === "Enter") {
+        calculate();
+      }
+    });
+
+    function formatNumberInput(input) {
+      const value = input.value.replace(/,/g, '');
+
+      if (isNaN(value)) {
+        input.value = Number(value.slice(0, -1)).toLocaleString();
+        return;
+      };
+      input.value = Number(value).toLocaleString();
+    }
+
+
+    function normalizeFloats(input) {
+      return parseFloat(input.replace(/,/g, ''))
+    }
+
+    function calculate() {
+      const purchasePrice = normalizeFloats(document.querySelector('input[name="purchasePrice"]').value);
+      const squareFeet = normalizeFloats(document.querySelector('input[name="squareFeet"]').value);
+      const costToStabilize = normalizeFloats(document.querySelector('input[name="costToStabilize"]').value);
+      const inPlaceNOI = normalizeFloats(document.querySelector('input[name="inPlaceNOI"]').value);
+      const marketRent = normalizeFloats(document.querySelector('input[name="marketRent"]').value);
+      const horizon = normalizeFloats(document.querySelector('input[name="horizon"]').value);
+      const avgRentGrowthRate = normalizeFloats(document.querySelector('input[name="avgRentGrowthRate"]').value);
+      const adjustmentToPurchasePrice = normalizeFloats(document.querySelector('input[name="adjustmentToPurchasePrice"]').value);
+      const address = document.querySelector('input[name="address"]').value.trim();
+      const market = document.querySelector('input[name="market"]').value.trim();
+      const submarket = document.querySelector('input[name="submarket"]').value.trim();
+
+      if (!purchasePrice || !squareFeet || !costToStabilize || !inPlaceNOI || !marketRent || !horizon || !avgRentGrowthRate) {
+        return;
+      }
+
+      const pricePSF = purchasePrice / squareFeet;
+      const totalCostPSF = (purchasePrice + costToStabilize * squareFeet) / squareFeet;
+      const inPlaceNOIValue = inPlaceNOI * squareFeet;
+      const inPlaceCapRate = (inPlaceNOIValue / purchasePrice) * 100;
+      const marketRentNOI = marketRent * squareFeet;
+      const marketCapRate = (marketRentNOI / purchasePrice) * 100;
+      const yieldOnCostInPlace = (inPlaceNOIValue / (purchasePrice + costToStabilize * squareFeet)) * 100;
+      const marketYieldOnCost = (marketRentNOI / (purchasePrice + costToStabilize * squareFeet)) * 100;
+      const trendedMarketRent = marketRent * Math.pow(1 + avgRentGrowthRate / 100, horizon);
+      const trendedMarketRentNOI = trendedMarketRent * squareFeet;
+      const trendedMarketCapRate = (trendedMarketRentNOI / purchasePrice) * 100;
+      const trendedMarketYieldOnCost = (trendedMarketRentNOI / (purchasePrice + costToStabilize * squareFeet)) * 100;
+
+      const outputDiv = document.getElementById("output");
+
+      const purchasePriceValueElement = document.getElementById("purchasePriceValue");
+      purchasePriceValueElement.textContent = purchasePrice.toLocaleString();
+
+      const costToStabilizeValueElement = document.getElementById("costToStabilizeValue");
+      costToStabilizeValueElement.textContent = costToStabilize.toLocaleString();
+
+      const pricePSFElement = document.getElementById("pricePSFValue");
+      pricePSFElement.textContent = pricePSF.toLocaleString();
+
+      const totalCostPSFElement = document.getElementById("totalCostPSFValue");
+      totalCostPSFElement.textContent = totalCostPSF.toLocaleString();
+
+      const inPlaceNOIElement = document.getElementById("inPlaceNOIValue");
+      inPlaceNOIElement.textContent = inPlaceNOIValue.toLocaleString();
+
+      const inPlaceCapRateElement = document.getElementById("inPlaceCapRateValue");
+      inPlaceCapRateElement.textContent = inPlaceCapRate.toLocaleString();
+
+      const marketRentNOIElement = document.getElementById("marketRentNOIValue");
+      marketRentNOIElement.textContent = marketRentNOI.toLocaleString();
+
+      const marketCapRateElement = document.getElementById("marketCapRateValue");
+      marketCapRateElement.textContent = marketCapRate.toFixed(2);
+
+      const yieldOnCostInPlaceElement = document.getElementById("yieldOnCostInPlaceValue");
+      yieldOnCostInPlaceElement.textContent = yieldOnCostInPlace.toFixed(2);
+
+      const marketYieldOnCostElement = document.getElementById("marketYieldOnCostValue");
+      marketYieldOnCostElement.textContent = marketYieldOnCost.toFixed(2);
+
+      const trendedMarketRentElement = document.getElementById("trendedMarketRentValue");
+      trendedMarketRentElement.textContent = trendedMarketRent.toLocaleString();
+
+      const trendedMarketCapRateElement = document.getElementById("trendedMarketCapRateValue");
+      trendedMarketCapRateElement.textContent = trendedMarketCapRate.toFixed(2);
+
+      const trendedMarketYieldOnCostElement = document.getElementById("trendedMarketYieldOnCostValue");
+      trendedMarketYieldOnCostElement.textContent = trendedMarketYieldOnCost.toFixed(2);
+
+      const addressElement = document.getElementById("addressValue");
+      const marketElement = document.getElementById("marketValue");
+      const submarketElement = document.getElementById("submarketValue");
+
+      if (address) {
+        addressElement.textContent = address;
+      } else {
+        addressElement.textContent = "Not provided";
+      }
+
+      if (market) {
+        marketElement.textContent = market;
+      } else {
+        marketElement.textContent = "Not provided";
+      }
+
+      if (submarket) {
+        submarketElement.textContent = submarket;
+      } else {
+        submarketElement.textContent = "Not provided";
+      }
+
+      outputDiv.style.display = "block";
+    }
+  </script>
+</body>
+
+</html>
